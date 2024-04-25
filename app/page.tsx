@@ -32,7 +32,7 @@ export default async function Index() {
             {/*  />*/}
             {/*</div>*/}
             <h1 className="font-extrabold text-4xl lg:text-6xl tracking-normal">
-              Learn Spanish
+              Learn Spanish conjugation
               <br/>
               from scratch!
             </h1>
@@ -55,7 +55,7 @@ export default async function Index() {
             </li>
           </ul>
           {user ? <>
-            <a className="btn btn-primary btn-wide group" href="/protected">
+            <a className="btn btn-primary btn-wide group" href="/decks">
               Continue your journey
             </a>
           </> : <>

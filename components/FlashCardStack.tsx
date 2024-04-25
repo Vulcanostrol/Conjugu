@@ -1,59 +1,70 @@
 'use client';
 
-import {KeyboardEvent, useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {FlashCard} from "@/components/FlashCard";
 import {FlashCardType} from "@/typing/types";
 import {createClient} from "@/utils/supabase/client";
 
-export function FlashCardStack() {
-  const [cards, setCards] = useState<Array<FlashCardType>>([]);
+type Props = {
+  deckId: number,
+}
+
+type CardWithBucketData = FlashCardType & {
+  bucket: number | undefined,
+}
+
+export function FlashCardStack({ deckId }: Props) {
+  const [cards, setCards] = useState<Array<CardWithBucketData>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
-      const {data} = await supabase.from('cards').select();
-      if (!data) return;
-      setCards(data);
-    }
-    fetchData().catch(console.error);
-  }, [])
-
-  const handleEnterPress = () => {
-    const topCard = cards[0];
-    if (!topCard) return;
-    setCards(cards.slice(1, cards.length + 1));
-
-    const upsertCardInDatabase = async () => {
+      // Get user data.
       const supabase = createClient();
       const {data: { user }} = await supabase.auth.getUser();
-      await supabase.from('sr-entries').upsert({
-        user_id: user?.id,
-        card_id: topCard.id,
-        bucket: 3,
-        last_seen: new Date().toISOString(),
-      });
-      console.log('Done upserting (?)');
-    }
-    upsertCardInDatabase().catch(console.error);
-  };
+      if (!user) throw new Error('User could not be retrieved.');
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key;
-      if (key !== "Enter") return;
-      handleEnterPress();
-    };
-    // @ts-ignore
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => {
-      // @ts-ignore
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [cards]);
+      // Get all cards in the current deck.
+      const {data: cardDeckData} = await supabase.from('card-deck').select().eq('deck', deckId);
+      if (!cardDeckData) throw new Error('Deck\'s cards could not be retrieved.');
+      const cardIds = cardDeckData.map((entry) => entry.id);
+
+      // Get all the data for all the retrieved cards.
+      const {data: cardsData} = await supabase.from('cards').select().in('id', cardIds);
+      if (!cardsData) throw new Error('Card data could not be retrieved.');
+
+      // Get spaced repetition data.
+      const {data: spacedRepetitionData} = await supabase.from('sr-entries').select().eq('user_id', user.id);
+      if (!spacedRepetitionData) throw new Error('Spaced repetition data could not be retrieved.');
+
+      // Combine card with their buckets.
+      const cardWithBucketData = cardsData.map((card: FlashCardType) => ({
+        ...card,
+        bucket: spacedRepetitionData.find((spacedRepetitionObject) => spacedRepetitionObject.card_id === card.id)?.bucket,
+      }));
+      setCards(cardWithBucketData);
+    }
+    fetchData().catch(console.error);
+  }, []);
+
+  const removeTopCard = useCallback(() => {
+    setCards(cards.slice(1, cards.length + 1));
+  }, [cards, setCards]);
 
   return (
-    <div className="stack">
-      {cards && cards.map((card) => <FlashCard key={card.id} id={card.id} prompt={card.prompt} answer={card.answer}/>)}
-    </div>
+    <>
+      <div className="stack">
+        {cards && cards.map((card) => <FlashCard
+          key={card.id}
+          id={card.id}
+          prompt={card.prompt}
+          answer={card.answer}
+          bucket={card.bucket}
+          removeThisCard={removeTopCard}
+        />)}
+      </div>
+      {cards.length > 0 && <button className="btn btn-primary" onClick={removeTopCard}>
+        Next card
+      </button>}
+    </>
   );
 }
