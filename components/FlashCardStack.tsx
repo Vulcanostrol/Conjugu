@@ -2,19 +2,15 @@
 
 import {useCallback, useEffect, useState} from "react";
 import {FlashCard} from "@/components/FlashCard";
-import {FlashCardType} from "@/typing/types";
+import {FlashCardType, SpacedRepetitionCardType} from "@/typing/types";
 import {createClient} from "@/utils/supabase/client";
 
 type Props = {
   deckId: number,
 }
 
-type CardWithBucketData = FlashCardType & {
-  bucket: number | undefined,
-}
-
 export function FlashCardStack({ deckId }: Props) {
-  const [cards, setCards] = useState<Array<CardWithBucketData>>([]);
+  const [spacedRepetitionCards, setSpacedRepetitionCards] = useState<Array<SpacedRepetitionCardType> | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,34 +33,79 @@ export function FlashCardStack({ deckId }: Props) {
       if (!spacedRepetitionData) throw new Error('Spaced repetition data could not be retrieved.');
 
       // Combine card with their buckets.
-      const cardWithBucketData = cardsData.map((card: FlashCardType) => ({
-        ...card,
-        bucket: spacedRepetitionData.find((spacedRepetitionObject) => spacedRepetitionObject.card_id === card.id)?.bucket,
-      }));
-      setCards(cardWithBucketData);
+      const spacedRepetitionCards: Array<SpacedRepetitionCardType> = cardsData.map((card: FlashCardType) => {
+        const spacedRepetitionForCard = spacedRepetitionData.find((item) => item.card_id === card.id);
+        if (spacedRepetitionForCard) {
+          return {
+            card,
+            ...spacedRepetitionForCard,
+          };
+        }
+        // Return default data.
+        return {
+          card: card,
+          user_id: user.id,
+          status: 'new',
+          stability: undefined,
+          difficulty: undefined,
+          lapses: 0,
+          revision_times: [],
+          revision_grades: [],
+          next_review: new Date().toISOString(), // now
+        }
+      });
+
+      const now = new Date();
+      const filteredAndSorted = spacedRepetitionCards.filter((card) => {
+        return new Date(card.next_review).getTime() <= now.getTime();
+      }).sort((a, b) => {
+        if (new Date(a.next_review).getTime() > new Date(b.next_review).getTime()) {
+          return 1;
+        } else {
+          return -1;
+        }
+      });
+
+      setSpacedRepetitionCards(filteredAndSorted);
     }
     fetchData().catch(console.error);
   }, []);
 
   const removeTopCard = useCallback(() => {
-    setCards(cards.slice(1, cards.length + 1));
-  }, [cards, setCards]);
+    if (!spacedRepetitionCards) return;
+    setSpacedRepetitionCards(spacedRepetitionCards.slice(1, spacedRepetitionCards.length + 1));
+  }, [spacedRepetitionCards, setSpacedRepetitionCards]);
 
   return (
-    <>
-      <div className="stack">
-        {cards && cards.map((card) => <FlashCard
-          key={card.id}
-          id={card.id}
-          prompt={card.prompt}
-          answer={card.answer}
-          bucket={card.bucket}
-          removeThisCard={removeTopCard}
-        />)}
-      </div>
-      {cards.length > 0 && <button className="btn btn-primary" onClick={removeTopCard}>
-        Next card
-      </button>}
-    </>
+    <div className="flex flex-col items-center justify-center gap-8 px-8 py-24 text-center">
+      {spacedRepetitionCards && <>
+        <div className="stack">
+          {spacedRepetitionCards && spacedRepetitionCards.map((src) => <FlashCard
+            key={src.user_id + src.card.id}
+            card={src.card}
+            user_id={src.user_id}
+            status={src.status}
+            stability={src.stability}
+            difficulty={src.difficulty}
+            lapses={src.lapses}
+            revision_times={src.revision_times}
+            revision_grades={src.revision_grades}
+            next_review={src.next_review}
+            removeThisCard={removeTopCard}
+          />)}
+        </div>
+        {spacedRepetitionCards.length > 0 && <button className="btn btn-primary" onClick={removeTopCard}>
+          Next card
+        </button>}
+        {spacedRepetitionCards.length === 0 && <>
+          <p>You finished this deck! Come back later to practice the cards.</p>
+          <a className="btn btn-primary" href="/decks">Back to decks</a>
+        </>}
+      </>}
+      {!spacedRepetitionCards && <>
+        <div className="skeleton w-96 h-48"></div>
+        <div className="skeleton btn w-24 h-8"></div>
+      </>}
+    </div>
   );
 }

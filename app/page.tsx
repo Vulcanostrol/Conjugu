@@ -32,7 +32,7 @@ export default async function Index() {
             {/*  />*/}
             {/*</div>*/}
             <h1 className="font-extrabold text-4xl lg:text-6xl tracking-normal">
-              Learn Spanish conjugation
+              Master Spanish conjugation
               <br/>
               from scratch!
             </h1>

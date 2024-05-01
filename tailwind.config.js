@@ -30,6 +30,11 @@ module.exports = {
         ...defaultTheme.fontFamily.sans,
       ]
     },
+    extend: {
+      screens: {
+        'short': { 'raw': '(max-height: 700px)' },
+      }
+    }
   },
   plugins: [
     require("daisyui"),
