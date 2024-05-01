@@ -18,7 +18,7 @@ export function FlashCard({id, prompt, answer, bucket, removeThisCard}: Props) {
 
   const submitThisCard = useCallback(() => {
     setSubmitted(true);
-    const correct = inputElement.current && allAnswers.includes(inputElement.current.value.toLowerCase());
+    const correct = inputElement.current && allAnswers.includes(inputElement.current.value.trim().toLowerCase());
 
     const newBucket = correct ? (bucket ? Math.min(bucket + 1, 5) : 3) : 1;
     const upsertCardInDatabase = async () => {
