@@ -9,16 +9,16 @@ type Props = FlashCardType & {
 };
 
 export function FlashCard({id, prompt, answer, bucket, removeThisCard}: Props) {
-  const allAnswers = answer.split(",").map((a) => a.trim());
+  const allAnswers = answer.split(",").map((a) => a.trim().toLowerCase());
 
   // Hooks.
   const inputElement = useRef<HTMLInputElement>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const correctAnswer = useMemo(() => inputElement.current && allAnswers.includes(inputElement.current.value), [inputElement.current?.value, allAnswers])
+  const correctAnswer = useMemo(() => inputElement.current && allAnswers.includes(inputElement.current.value.toLowerCase()), [inputElement.current?.value, allAnswers])
 
   const submitThisCard = useCallback(() => {
     setSubmitted(true);
-    const correct = inputElement.current && allAnswers.includes(inputElement.current.value);
+    const correct = inputElement.current && allAnswers.includes(inputElement.current.value.toLowerCase());
 
     const newBucket = correct ? (bucket ? Math.min(bucket + 1, 5) : 3) : 1;
     const upsertCardInDatabase = async () => {
