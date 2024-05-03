@@ -45,7 +45,13 @@ export default function Login({
     });
 
     if (error) {
-      return redirect("/login?message=Could not authenticate user");
+      switch (error.status) {
+        case (429):
+          return redirect("/login?message=Cannot authenticate you right now, because of rate-limiting. Please try again in an hour.");
+        default:
+          console.error(error);
+          return redirect("/login?message=Could not authenticate user");
+      }
     }
 
     return redirect("/login?message=Check email to continue sign in process");
