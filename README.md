@@ -7,4 +7,5 @@ Just a simple Next.js + Supabase application I made to learn Sapnish conjugation
 - Fix KBM flow with submitting cards (remove need to press TAB to select next card).
 - Add more decks
 - Add 'lesson decks' (no spaced repetition, just explaining some theory).
-- Add a 'practice mode', to practice all scheduled cards.
+- Add a 'practice mode', to practice all scheduled cards. ✅
+- Clean up / refactor code (current code is more prototype-y).

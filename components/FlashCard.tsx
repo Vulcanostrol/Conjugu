@@ -13,15 +13,14 @@ import {
 } from "@/utils/spaced-repetition";
 
 type Props = SpacedRepetitionCardType & {
+  isFirst: boolean,
   removeThisCard: () => void,
 };
 
 const MILLISECONDS_IN_DAY = 1000 * 60 * 24;
 
-export function FlashCard({card, stability, difficulty, lapses, status, revision_times, revision_grades, next_review, removeThisCard}: Props) {
+export function FlashCard({card, stability, difficulty, lapses, status, revision_times, revision_grades, next_review, isFirst, removeThisCard}: Props) {
   const allAnswers = card.answer.split(",").map((a) => a.trim().toLowerCase());
-
-  const bucket = 1;
 
   // Hooks.
   const inputElement = useRef<HTMLInputElement>(null);
@@ -70,7 +69,7 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
       });
     }
     upsertCardInDatabase().catch(console.error);
-  }, [card.id, bucket, inputElement, allAnswers]);
+  }, [card.id, inputElement, allAnswers]);
 
   const onKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter') return;
@@ -80,7 +79,7 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
       submitThisCard();
     }
     event.preventDefault();
-  }, [card.id, bucket, correctAnswer, submitted, removeThisCard]);
+  }, [card.id, correctAnswer, submitted, removeThisCard]);
 
   return (
     <div className="text-center border border-base-content card w-96 h-48 bg-neutral-900">
@@ -92,6 +91,7 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
                  placeholder="type your answer..."
                  onKeyDown={onKeyDown}
                  ref={inputElement}
+                 disabled={!isFirst}
           />
         </label>
         {submitted && <>

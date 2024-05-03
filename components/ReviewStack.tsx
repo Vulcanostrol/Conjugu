@@ -5,21 +5,7 @@ import {FlashCard} from "@/components/FlashCard";
 import {FlashCardType, SpacedRepetitionCardType} from "@/typing/types";
 import {createClient} from "@/utils/supabase/client";
 
-type Props = {
-  deckId: number,
-}
-
-function shuffle<T>(array: Array<T>): Array<T> {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const temp = array[i];
-    array[i] = array[j];
-    array[j] = temp;
-  }
-  return array;
-}
-
-export function FlashCardStack({ deckId }: Props) {
+export function ReviewStack() {
   const [spacedRepetitionCards, setSpacedRepetitionCards] = useState<Array<SpacedRepetitionCardType> | undefined>(undefined);
 
   useEffect(() => {
@@ -29,18 +15,17 @@ export function FlashCardStack({ deckId }: Props) {
       const {data: { user }} = await supabase.auth.getUser();
       if (!user) throw new Error('User could not be retrieved.');
 
-      // Get all cards in the current deck.
-      const {data: cardDeckData} = await supabase.from('card-deck').select().eq('deck', deckId);
-      if (!cardDeckData) throw new Error('Deck\'s cards could not be retrieved.');
-      const cardIds = cardDeckData.map((entry) => entry.card);
+      // Get spaced repetition data.
+      const {data: spacedRepetitionData} = await supabase.from('sr-entries')
+        .select()
+        .eq('user_id', user.id)
+        .lte('next_review', new Date().toISOString());
+      if (!spacedRepetitionData) throw new Error('Spaced repetition data could not be retrieved.');
+      const cardIds = spacedRepetitionData.map((entry) => entry.card_id);
 
       // Get all the data for all the retrieved cards.
       const {data: cardsData} = await supabase.from('cards').select().in('id', cardIds);
       if (!cardsData) throw new Error('Card data could not be retrieved.');
-
-      // Get spaced repetition data.
-      const {data: spacedRepetitionData} = await supabase.from('sr-entries').select().eq('user_id', user.id);
-      if (!spacedRepetitionData) throw new Error('Spaced repetition data could not be retrieved.');
 
       // Combine card with their buckets.
       const spacedRepetitionCards: Array<SpacedRepetitionCardType> = cardsData.map((card: FlashCardType) => {
@@ -51,18 +36,7 @@ export function FlashCardStack({ deckId }: Props) {
             ...spacedRepetitionForCard,
           };
         }
-        // Return default data.
-        return {
-          card: card,
-          user_id: user.id,
-          status: 'new',
-          stability: undefined,
-          difficulty: undefined,
-          lapses: 0,
-          revision_times: [],
-          revision_grades: [],
-          next_review: new Date().toISOString(), // now
-        }
+        throw new Error('No spaced-repetition data for card in review --> should never happen!');
       });
 
       const now = new Date();
@@ -76,9 +50,7 @@ export function FlashCardStack({ deckId }: Props) {
         }
       });
 
-      const shuffled = shuffle(filteredAndSorted);
-
-      setSpacedRepetitionCards(shuffled);
+      setSpacedRepetitionCards(filteredAndSorted);
     }
     fetchData().catch(console.error);
   }, []);
