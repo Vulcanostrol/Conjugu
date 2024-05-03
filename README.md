@@ -8,4 +8,5 @@ Just a simple Next.js + Supabase application I made to learn Sapnish conjugation
 - Add more decks
 - Add 'lesson decks' (no spaced repetition, just explaining some theory).
 - Add a 'practice mode', to practice all scheduled cards. ✅
+- Add a page with a learned words overview, and the stability of those words.
 - Clean up / refactor code (current code is more prototype-y).
