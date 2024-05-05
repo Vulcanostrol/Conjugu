@@ -107,9 +107,6 @@ export function FlashCardStack({ deckId }: Props) {
             removeThisCard={removeTopCard}
           />)}
         </div>
-        {spacedRepetitionCards.length > 0 && <button className="btn btn-primary" onClick={removeTopCard}>
-          Next card
-        </button>}
         {spacedRepetitionCards.length === 0 && <>
           <p>You finished this deck! Come back later to practice the cards.</p>
           <a className="btn btn-primary" href="/decks">Back to decks</a>

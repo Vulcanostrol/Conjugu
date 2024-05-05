@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef, useState} from "react";
+import {ChangeEvent, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {SpacedRepetitionCardType} from "@/typing/types";
 import {KeyboardEvent} from 'react';
 import {createClient} from "@/utils/supabase/client";
@@ -26,6 +26,11 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
   const inputElement = useRef<HTMLInputElement>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const correctAnswer = useMemo(() => inputElement.current && allAnswers.includes(inputElement.current.value.toLowerCase()), [inputElement.current?.value, allAnswers])
+  const [currenInput, setCurrentInput] = useState('');
+
+  const onInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setCurrentInput(e.target.value);
+  }, [setCurrentInput])
 
   const submitThisCard = useCallback(() => {
     setSubmitted(true);
@@ -81,6 +86,12 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
     event.preventDefault();
   }, [card.id, correctAnswer, submitted, removeThisCard]);
 
+  useEffect(() => {
+    if (isFirst) {
+      inputElement.current?.focus()
+    }
+  }, [isFirst]);
+
   return (
     <div className="text-center border border-base-content card w-96 h-48 bg-neutral-900">
       <div className="card-body">
@@ -90,6 +101,7 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
                  className="grow text-center"
                  placeholder="type your answer..."
                  onKeyDown={onKeyDown}
+                 onChange={onInputChange}
                  ref={inputElement}
                  disabled={!isFirst}
           />
@@ -104,6 +116,21 @@ export function FlashCard({card, stability, difficulty, lapses, status, revision
           </p>
         </>}
       </div>
+      {isFirst && <div className="absolute bottom-0 w-full transform translate-y-20">
+        {currenInput.length > 0 && !submitted
+          ? <button className="btn btn-primary" onClick={submitThisCard}>
+            Submit card
+          </button>
+          : (!submitted
+            ? <button className="btn btn-primary" onClick={removeThisCard}>
+              Skip card
+            </button>
+            : <button className="btn btn-primary" onClick={removeThisCard}>
+              Next card
+            </button>
+          )
+        }
+      </div>}
     </div>
   );
 }
